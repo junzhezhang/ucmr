@@ -1,8 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import torch
-import neural_renderer
-
+# import neural_renderer
+from kaolin.graphics.NeuralMeshRenderer import NeuralMeshRenderer
+from kaolin.graphics.nmr import util as nmr_util
+from kaolin.graphics.nmr import rasterizer as nmr_rasterizer
+from kaolin.graphics.SoftRenderer import SoftRenderer 
 from ..nnutils import geom_utils
 
 
@@ -12,7 +15,8 @@ def convert_as(src, trg):
         src = src.cuda(device=trg.get_device())
     return src
 
-class NMR_custom(neural_renderer.Renderer):
+### NOTE: major changes to adapt to kaolin's NMR
+class NMR_custom(NeuralMeshRenderer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -24,9 +28,9 @@ class NMR_custom(neural_renderer.Renderer):
                 textures = torch.cat((textures, textures.permute((0, 1, 4, 3, 2, 5))), dim=1)
 
         # lighting
-        faces_lighting = neural_renderer.vertices_to_faces(vertices, faces)
+        faces_lighting = nmr_util.vertices_to_faces(vertices, faces)
         if textures is not None:
-            textures = neural_renderer.lighting(
+            textures = nmr_util.lighting(
                 faces_lighting,
                 textures,
                 self.light_intensity_ambient,
@@ -37,15 +41,15 @@ class NMR_custom(neural_renderer.Renderer):
 
         # viewpoint transformation
         if self.camera_mode == 'look_at':
-            vertices = neural_renderer.look_at(vertices, self.eye)
+            vertices = nmr_util.look_at(vertices, self.eye)
             # perspective transformation
             if self.perspective:
-                vertices = neural_renderer.perspective(vertices, angle=self.viewing_angle)
+                vertices = nmr_util.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'look':
-            vertices = neural_renderer.look(vertices, self.eye, self.camera_direction)
+            vertices = nmr_util.look(vertices, self.eye, self.camera_direction)
             # perspective transformation
             if self.perspective:
-                vertices = neural_renderer.perspective(vertices, angle=self.viewing_angle)
+                vertices = nmr_util.perspective(vertices, angle=self.viewing_angle)
         elif self.camera_mode == 'projection':
             if K is None:
                 K = self.K
@@ -57,16 +61,17 @@ class NMR_custom(neural_renderer.Renderer):
                 dist_coeffs = self.dist_coeffs
             if orig_size is None:
                 orig_size = self.orig_size
-            vertices = neural_renderer.projection(vertices, K, R, t, dist_coeffs, orig_size)
+            vertices = nmr_util.projection(vertices, K, R, t, dist_coeffs, orig_size)
 
         # rasterization
-        faces = neural_renderer.vertices_to_faces(vertices, faces)
-        out = neural_renderer.rasterize_rgbad(
+        faces = nmr_util.vertices_to_faces(vertices, faces)
+        out = nmr_rasterizer.rasterize_rgbad(
             faces, textures, self.image_size, self.anti_aliasing, self.near, self.far, self.rasterizer_eps,
             self.background_color, return_alpha=True, return_depth=True, return_rgb=(textures is not None))
         return out['rgb'], out['depth'], out['alpha']
 
 
+### NOTE: major changes to adapt to kaolin's softras
 ########################################################################
 ############## Wrapper torch module for SoftRas Renderer ################
 ########################################################################
@@ -76,8 +81,10 @@ class SoftRas(torch.nn.Module):
     """
     def __init__(self, img_size=256, perspective=True, **kwargs):
         super(SoftRas, self).__init__()
-        import soft_renderer
-        self.renderer = soft_renderer.SoftRenderer(image_size=img_size, camera_mode='look_at', perspective=perspective, eye=[0, 0, -2.732], **kwargs)
+        # print('perspective:', perspective)
+        # import pdb; pdb.set_trace()
+        eye = torch.tensor([0, 0, -2.732])
+        self.renderer = SoftRenderer(image_size=img_size, camera_mode='look_at', perspective_distort=perspective, eye=eye, **kwargs)
         self.renderer = self.renderer.cuda()
 
         self.viewing_angle = 30
@@ -105,9 +112,9 @@ class SoftRas(torch.nn.Module):
     def project_points_perspective(self, verts, cams, depth=False):
         verts = self.proj_fn(verts, cams, offset_z=self.offset_z)
 
-        verts = neural_renderer.look_at(verts, self.eye)
+        verts = nmr_util.look_at(verts, self.eye)
         if self.perspective:
-            verts = neural_renderer.perspective(verts, angle=self.viewing_angle)
+            verts = nmr_util.perspective(verts, angle=self.viewing_angle)
 
         if depth:
             return verts[:, :, :2], verts[:, :, 2]
@@ -190,9 +197,9 @@ class NeuralRenderer_pytorch(torch.nn.Module):
     def project_points_perspective(self, verts, cams, depth=False):
         verts = self.proj_fn(verts, cams, offset_z=self.offset_z)
 
-        verts = neural_renderer.look_at(verts, self.renderer.eye)
+        verts = nmr_util.look_at(verts, self.renderer.eye)
         if self.renderer.perspective:
-            verts = neural_renderer.perspective(verts, angle=self.renderer.viewing_angle)
+            verts = nmr_util.perspective(verts, angle=self.renderer.viewing_angle)
 
         if depth:
             return verts[:, :, :2], verts[:, :, 2]

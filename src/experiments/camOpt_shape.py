@@ -115,7 +115,7 @@ class ForwardWrapper(torch.nn.Module):
         if not opts.is_train:
             self.model.eval()
 
-        self.renderer_mask = SoftRas(opts.img_size, perspective=opts.perspective, light_intensity_ambient=1.0, light_intensity_directionals=0.0)
+        self.renderer_mask = SoftRas(opts.img_size, perspective=opts.perspective, light_intensity_ambient=1.0, light_intensity_directional=0.0)
         self.renderer_mask.ambient_light_only()
         self.renderer_mask.renderer.set_gamma(opts.softras_gamma)
         self.renderer_mask.renderer.set_sigma(opts.softras_sigma)

@@ -13,7 +13,7 @@ from ..nnutils import geom_utils
 
 
 def load_obj_file(path, device='cpu'):
-    import pymesh
+    # import pymesh
     pmesh = pymesh.load_mesh(path)
     verts = pmesh.vertices
     faces = pmesh.faces
@@ -31,7 +31,7 @@ def save_obj_file(path, verts, faces):
     verts = verts.detach().cpu().numpy() if torch.is_tensor(verts) else verts
     faces = faces.detach().cpu().numpy() if torch.is_tensor(faces) else faces
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts, faces)
     pymesh.save_mesh(path, pmesh)
 
@@ -438,7 +438,7 @@ def symmetrize(verts, faces, eps=1e-3):
     verts_centre_mask = (verts[:,0].abs() < eps)
     verts[verts_centre_mask, 0] = 0
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts.numpy(), faces.numpy())
     pymesh.save_mesh(f'csm_mesh/debug/1.obj', pmesh)
 
@@ -499,7 +499,7 @@ def symmetrize(verts, faces, eps=1e-3):
     faces = torch.index_select(faces, 0, (~face_intesects_yz).nonzero().squeeze(1))
     faces = torch.cat([faces, new_faces], dim=0)
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts.numpy(), faces.numpy())
     pymesh.save_mesh(f'csm_mesh/debug/2.obj', pmesh)
 
@@ -526,7 +526,7 @@ def symmetrize(verts, faces, eps=1e-3):
     faces_degenerate = (faces[:,0]==faces[:,1]) | (faces[:,0]==faces[:,2]) | (faces[:,2]==faces[:,1])
     faces = torch.index_select(faces, 0, (~faces_degenerate).nonzero().squeeze(1))
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts.numpy(), faces.numpy())
     pymesh.save_mesh(f'csm_mesh/debug/3.obj', pmesh)
 
@@ -539,7 +539,7 @@ def symmetrize(verts, faces, eps=1e-3):
     face_right_mask = (face_verts_side[:,0]==1) | (face_verts_side[:,1]==1) | (face_verts_side[:,2]==1)
     faces = torch.index_select(faces, 0, (~face_right_mask).nonzero().squeeze(1))
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts.numpy(), faces.numpy())
     pymesh.save_mesh(f'csm_mesh/debug/4.obj', pmesh)
 
@@ -554,7 +554,7 @@ def symmetrize(verts, faces, eps=1e-3):
     verts = torch.cat([verts, verts_flip], dim=0)
     faces = vertex_mapping[faces]
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts.numpy(), faces.numpy())
     pymesh.save_mesh(f'csm_mesh/debug/5.obj', pmesh)
 
@@ -594,7 +594,7 @@ def symmetrize(verts, faces, eps=1e-3):
     faces = vertex_mapping[faces]
     verts = verts[vertices_used]
 
-    import pymesh
+    # import pymesh
     pmesh = pymesh.form_mesh(verts.numpy(), faces.numpy())
     pymesh.save_mesh(f'csm_mesh/debug/6.obj', pmesh)
 
@@ -804,7 +804,7 @@ if __name__ == "__main__":
         tex_pred_bxfxtxtxtx3 = tex_pred_bxfxtxtx3.unsqueeze(4).expand(-1, -1, -1, -1, tex_size, -1)
 
         from ..nnutils.nmr import SoftRas
-        renderer = SoftRas(img_size=256, light_intensity_ambient=1.0, light_intensity_directionals=0.0)
+        renderer = SoftRas(img_size=256, light_intensity_ambient=1.0, light_intensity_directional=0.0)
         cams = torch.tensor([3, 0, 0, 1, 0, 0, 0], dtype=torch.float32)        # [sc, tx, ty, quaternions]
 
         vertices = vertices.cuda()

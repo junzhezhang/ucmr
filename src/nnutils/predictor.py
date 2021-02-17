@@ -65,11 +65,14 @@ class MeshPredictor(object):
                             opts.img_size,
                             perspective=opts.perspective,
                             light_intensity_ambient=1.0,
-                            light_intensity_directionals=0.0
+                            light_intensity_directional=0.0
                         )
         self.renderer.ambient_light_only()
-        self.renderer.renderer.set_gamma(1e-8)
-        self.renderer.renderer.set_sigma(1e-8)
+        
+        # self.renderer.renderer.set_gamma(1e-8)
+        # self.renderer.renderer.set_sigma(1e-8)
+        self.renderer.renderer.gamma_val = 1e-8
+        self.renderer.renderer.sigma_val = 1e-8
         self.renderer = self.renderer.cuda()
 
         self.vis_rend = bird_vis.VisRendererBatch(opts.img_size, self.faces.cpu().numpy(), perspective=opts.perspective)
